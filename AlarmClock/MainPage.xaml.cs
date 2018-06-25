@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using Windows.Graphics.Imaging;
 using Windows.Media;
-using Windows.Media.FaceAnalysis;
-using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Core;
