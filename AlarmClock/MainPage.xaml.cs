@@ -28,8 +28,13 @@ namespace AlarmClock
     public sealed partial class MainPage : Page
     {
         private List<string> labels;
+
         private string expectedEmotion;
         private string detectedEmotion = string.Empty;
+        private string detectedGender = string.Empty;
+        private string detectedAge = string.Empty;
+        private string returnDetection = string.Empty;
+
         private VideoFrame lastFrame;
         private Timer timer = new Timer(5000);
         private DispatcherTimer clockTimer;
@@ -88,9 +93,9 @@ namespace AlarmClock
             }
         }
 
-        private async Task ProcessEmotion(string detectedEmotion)
+        private async Task ProcessEmotion(string returnDetection)
         {
-            if (!string.IsNullOrWhiteSpace(detectedEmotion) && (expectedEmotion.Equals(detectedEmotion, StringComparison.CurrentCultureIgnoreCase)))
+            if (returnDetection == "OK" && (expectedEmotion.Equals(detectedEmotion, StringComparison.CurrentCultureIgnoreCase)))
             {
                 alarmOn = false;
             }
@@ -104,6 +109,7 @@ namespace AlarmClock
             () =>
             {
                 DetectedEmotion.Text = string.Format("Detected {0} at {1}", detectedEmotion, DateTime.Now.ToLongTimeString());
+                DetectedData.Text = string.Format("Gender: {0} Age: {1}", detectedGender, detectedAge);
             }
             );
         }
@@ -121,8 +127,8 @@ namespace AlarmClock
             // Analyze the last frame
             try
             {
-                detectedEmotion = await DetectEmotionWithCognitiveServices();
-                await ProcessEmotion(detectedEmotion);
+                returnDetection = await DetectEmotionWithCognitiveServices();
+                await ProcessEmotion(returnDetection);
             }
             catch
             {
@@ -153,20 +159,24 @@ namespace AlarmClock
                 imageStream.Seek(0);
 
                 var faceServiceClient = new FaceServiceClient(subscriptionKey, apiBaseUrl);
-                var detectedEmotion = string.Empty;
+                detectedEmotion = string.Empty;
+                detectedGender = string.Empty;
+                detectedAge = string.Empty;
 
                 try
                 {
-                    Face[] faces = await faceServiceClient.DetectAsync(imageStream.AsStream(), false, true, new FaceAttributeType[] { FaceAttributeType.Emotion });
+                    Face[] faces = await faceServiceClient.DetectAsync(imageStream.AsStream(), false, true, new FaceAttributeType[] { FaceAttributeType.Emotion, FaceAttributeType.Age, FaceAttributeType.Gender });
                     var detectedFace = faces?.FirstOrDefault();
                     detectedEmotion = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Emotion.ToRankedList().FirstOrDefault().Key;
+                    detectedGender = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Gender.ToString();
+                    detectedAge = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Age.ToString();
                 }
                 catch (FaceAPIException e)
                 {
-                    detectedEmotion = "API error. Check the values of subscriptionKey and apiBaseUrl";
+                    return "API error. Check the values of subscriptionKey and apiBaseUrl";
                 }
 
-                return detectedEmotion;
+                return "OK";
             }
         }
     }
