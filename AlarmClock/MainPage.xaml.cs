@@ -30,11 +30,15 @@ namespace AlarmClock
         private List<string> labels;
 
         private string expectedEmotion;
+        private string returnDetection = string.Empty;
+
         private string detectedEmotion = string.Empty;
         private string detectedGender = string.Empty;
         private string detectedAge = string.Empty;
-        private string returnDetection = string.Empty;
-
+        private string detectedGlasses = string.Empty;
+        private string detectedHair = string.Empty;
+        private string detectedFacialHair = string.Empty;
+        
         private VideoFrame lastFrame;
         private Timer timer = new Timer(5000);
         private DispatcherTimer clockTimer;
@@ -109,7 +113,7 @@ namespace AlarmClock
             () =>
             {
                 DetectedEmotion.Text = string.Format("Detected {0} at {1}", detectedEmotion, DateTime.Now.ToLongTimeString());
-                DetectedData.Text = string.Format("Gender: {0} Age: {1}", detectedGender, detectedAge);
+                DetectedData.Text = string.Format("Gender: {0} Age: {1} Glasses: {2} Hair: {3} Facial Hair: {4}", detectedGender, detectedAge, detectedGlasses, detectedHair, detectedFacialHair);
             }
             );
         }
@@ -162,14 +166,20 @@ namespace AlarmClock
                 detectedEmotion = string.Empty;
                 detectedGender = string.Empty;
                 detectedAge = string.Empty;
+                detectedGlasses = string.Empty;
+                detectedHair = string.Empty;
+                detectedFacialHair = string.Empty;
 
                 try
                 {
-                    Face[] faces = await faceServiceClient.DetectAsync(imageStream.AsStream(), false, true, new FaceAttributeType[] { FaceAttributeType.Emotion, FaceAttributeType.Age, FaceAttributeType.Gender });
+                    Face[] faces = await faceServiceClient.DetectAsync(imageStream.AsStream(), false, true, new FaceAttributeType[] { FaceAttributeType.Emotion, FaceAttributeType.Age, FaceAttributeType.Gender, FaceAttributeType.Glasses, FaceAttributeType.Hair, FaceAttributeType.FacialHair });
                     var detectedFace = faces?.FirstOrDefault();
                     detectedEmotion = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Emotion.ToRankedList().FirstOrDefault().Key;
                     detectedGender = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Gender.ToString();
                     detectedAge = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Age.ToString();
+                    detectedGlasses = detectedFace == null ? "Nothing" : detectedFace.FaceAttributes.Glasses.ToString();
+                    detectedHair = detectedFace == null ? "Nothing" : (detectedFace.FaceAttributes.Hair.Bald * 100).ToString();
+                    detectedFacialHair = detectedFace == null ? "Nothing" : (detectedFace.FaceAttributes.FacialHair.Beard * 100).ToString();
                 }
                 catch (FaceAPIException e)
                 {
